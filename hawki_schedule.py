@@ -188,7 +188,7 @@ def main(RA, DEC, EQUINOX, TRIGGERTIME):
 			if triggerFlag == True:
 				break
 			
-	return triggerFlag
+	return triggerFlag, TimeArray
 	
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ Usage:
 import time
 import sys
 
-from remoteObserver.lib.cooReWrapperClass import CelestialObject
+from pyservatory.cooReWrapperClass import CelestialObject
 
 __author__ = "Jonny Elliott"
 __copyright__ = "Copyright 2011"
@@ -43,11 +43,16 @@ def main():
 	# Set the observatory information and calc twilights
 	GRB = CelestialObject()
 	GRB.setObservatory(siteabbrev='e')
-	intime = [2012, 06, 23, 10, 10, 10, 0, 0, 0]
-	timestruct = time.struct_time(intime[0:9])
-	GRB.computeTwilights(intime=timestruct)
+	intime = time.gmtime(time.time())
+	intime = time.struct_time(intime[0:9])
+	timestruct = time.struct_time(intime)
+	GRB.computeTwilights()
 	GRB.computeNightLength()
 	GRB.printInfo()
+
+	intime = intime[0:6]
+	print ""
+	print "Given date: %s-%s-%s\t %s:%s:%s UT" % (intime[0], intime[1], intime[2], intime[3], intime[4], intime[5])
 
 if __name__ == "__main__":
 	main()
