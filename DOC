@@ -1,0 +1,58 @@
+HAWK-I RRM:
+
+Two parts:
+
+1. Look for new trigger:
+	a. GRB???
+	b. Mounted; yes/no
+	c. if Mounted; Observability; yes/no
+	d. if Mounted; if Observable;  Make trigger lock
+
+2. Check triggers:
+
+	OPTIONS:
+		1. New trigger GRBNAME.rrm
+		2. New trigger, triggered GRBNAME.rrmlock
+
+	a. Trigger lock exists; yes/no
+	b. if Trigger exists; New; yes/no
+	c. if Trigger exists; if New;
+		
+		c.1. Upload FTP file
+		c.2. E-mail details
+		c.3. Finding Chart
+		(c.4. text message)
+
+Binaries
+
+	Observability (pyservatory)
+		obs/hawki_schedule.py
+		
+	Mounted		(pyweb)
+		hawki_mounted.py
+
+	Trigger details (pyweb)
+		hawki_burstinfo.py
+
+	E-mail details
+		hawki_email_send.py
+		email_filled.txt FILE
+
+	Finding Chart
+		hawki_make_fc.py
+
+	Upload FTP file
+		hawki_ftp_upload.py
+		rrm_template.txt FILE
+
+Libraries
+	
+	PyServatory
+
+	PyWeb
+
+
+Etc
+	rrm_template.txt
+	email_filled.txt
+
