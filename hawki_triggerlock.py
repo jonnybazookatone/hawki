@@ -90,9 +90,17 @@ def check4trigger():
 		for rrmburst in rrmLocks:
 			pattern = 'rrmlock'
 			if re.search(pattern, rrmburst):
-				print rrmburst
+				print "RRM LOCKED IGNORING BURST: %s"
+				previousTriggers.append(rrmburst)
 
-	
+			else:
+				print "RRM TRIGGER: %s"
+				newTrigger.append(rrmburst)
+
+		for burst in newTrigger:
+
+			# Trigger RRM
+
 	else:
 		print "NO TRIGGERS, EXITING"
 
