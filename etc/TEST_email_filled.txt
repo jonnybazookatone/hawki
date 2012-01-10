@@ -1,0 +1,77 @@
+#AR-Message-Begin Do Not Delete This Line
+Schema: TOO:Target Opportunity
+Server: odyssey9.pl.eso.org
+Login: toousr
+Password: toousr
+Action: Submit
+Format: Short
+Program ID + ! 8!: 088.D-0678(A)
+Principal Investigator ! 4!: JNELLIOTT
+P2PP password !536870996!: pwd4HAWKI
+Telescope !536870916!: Yepun (UT4)
+# Values: Antu (UT1), Kueyen (UT2), Melipal (UT3), Yepun (UT4), VLTI
+Instrument !536870917!: HAWKI
+# Instrument depends on the selected Telescope
+# Example: ISAAC goes with Antu (UT1)
+Status ! 7!: New
+Name of the trigger ! 2!: TEST
+Affected Program !536871004!:
+Requester !536870920!: JNELLIOTT
+Contact Phone # !536870991!: +4917699029128
+Requester 1 Email !536870915!: jonnyelliott@mpe.mpg.de
+Requester 2 Email !536870928!: jcg@mpe.mpg.de
+Requester 3 Email !536870976!: tom@dark-cosmology.dk
+Requester 4 Email !536870978!: yoldas@mpe.mpg.de
+Requester 5 Email !536870980!:
+Requester 6 Email !536870982!:
+Target Name !536870921!: TEST
+RA !536870926!: 06:30:45.50
+DEC !536870927!: -60:31:12.0
+Magnitude !536870929!:
+# Values: Finding chart, Ephemeris
+Finding chart OR Ephemeris !536870994!: http://jonnyy.uwcs.co.uk/grbs/TEST.jpg
+Finding chart OR Ephemeris ATT !536870995!: http://jonnyy.uwcs.co.uk/grbs/TEST.jpg
+Instrument Configuration ATT !536871000!:
+# Constraints
+Sky constraint !536870931!:
+Other Constraints !536870930!:
+Seeing better than !536870932!: 0.0
+Airmass better than !536870934!: 0.0
+# Values: One night, Two nights, Four nights
+Priority !536870939!:
+# Science OB
+OB Name (1) !536870943!: RRM_GRB_AUTO_1
+Hrs(1) !536870944!: 1.0
+OB Name (2) !536870945!:
+Hrs(2) !536870946!: 0.0
+OB Name (3) !536870947!:
+Hrs(3) !536870948!: 0.0
+OB Name (4) !536870949!:
+Hrs(4) !536870950!: 0.0
+OB Name (5) !536870951!:
+Hrs(5) !536870952!: 0.0
+OB Name (6) !536870953!:
+Hrs(6) !536870954!: 0.0
+OB Name (7) !536870955!:
+Hrs(7) !536870956!: 0.0
+OB Name (8) !536870957!:
+Hrs(8) !536870958!: 0.0
+OB Name (9) !536870959!:
+Hrs(9) !536870960!: 0.0
+OB Name (10) !536870961!:
+Hrs(10) !536870962!: 0.0
+# Values: Standard, Additional
+Calibration requirements !536870964!: Standard
+Calibration (1) !536870974!:
+Calibration (2) !536870973!:
+Calibration (3) !536870972!:
+Calibration (4) !536870971!:
+Calibration (5) !536870965!:
+Calibration (6) !536870969!:
+Calibration (7) !536870968!:
+Calibration (8) !536870967!:
+Calibration (9) !536870966!:
+Calibration(10) !536870970!:
+# Adittional Information
+Comments !536870979!: finding chart: http://jonnyy.uwcs.co.uk/grbs/TEST.jpg. We require as fast as possible (instant) access to the data. Please upload the reduced data to the following ftp as soon as possible: ftp.rzg.mpg.de/incoming/grond (user,password are anonymous).
+#AR-Message-End Do Not Delete This Line
