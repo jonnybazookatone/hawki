@@ -12,21 +12,37 @@ __maintainer__ = "Jonny Elliott"
 __email__ = "jonnyelliott@mpe.mpg.de"
 __status__ = "Prototype"
 
-def main():
+# Wikipage layout
+
+# General Details
+
+# Observability image
+
+# Finding chart
+
+def main(grbname):
 
 	wiki_url = 'https://gamma-wiki.mpe.mpg.de/GROND/'
 	username = 'hawki'
 	passwd = 'pwd4automation'
-	pagename = 'hawkitestpage'
+	pagename = 'hawki_%s' % grbname
+
+	fileinput = open("%s.log" % grbname, "r")
+	lineinput = fileinput.readlines()
+	fileinput.close()
 
 	wikibot = wikipage.WikiPage(wiki_url=wiki_url,pagename=pagename,username=username,password=passwd)
 	wikibot.login()
 	wikibot.open()
-#	if not wikibot.linelist:
-#		logger.info("Wiki page appears empty!, Building from scratch now")
-	wikibot.linelist = ["= Page to upload remote observations of GROND =","----"]
-	wikibot.attach("fc/TEST.jpg")
-	wikibot.linelist.append('{{attachment:%s}}' % "TEST.jpg") #Assuming "images/..." format for filename!
+
+	wikibot.linelist = ["= GENERAL INFORMATION ="]
+	for i in lineinput:
+		wikibot.linelist.append(i)
+
+	wikibot.linelist.append("= FINDING CHART =")
+	wikibot.attach("fc/%s.jpg" % grbname)
+	wikibot.linelist.append('{{attachment:%s.jpg}}' % grbname) #Assuming "images/..." format for filename!
+
 	wikibot.save()
 	wikibot.logout()
 
