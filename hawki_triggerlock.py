@@ -6,7 +6,13 @@ import os
 import glob
 import time
 import re
+import shutil
+import logging
 
+from hawki_burstinfo import main as burstinfo
+from hawki_ftp_upload import makeRRMFile, uploadRRMFile
+from hawki_email_send import email_send
+from hawki_make_fc import hack_fc, upload_fc
 from hawki_mounted import mounted 
 from hawki_schedule import main as observability
 import pyservatory.cooclasses as coo
@@ -22,7 +28,20 @@ __status__ = "Prototype"
 
 def check4burst(RA, DEC, EQUINOX, TRIGGERTIME, NAME):
 
-	# 1. GRB INFO FROM JCG PAGES
+	# Logging
+	logfmt = '%(levelname)s:  %(message)s\t(%(asctime)s)'
+	datefmt= '%m/%d/%Y %I:%M:%S %p'
+	formatter = logging.Formatter(fmt=logfmt,datefmt=datefmt)
+	logger = logging.getLogger('__main__')
+	logging.root.setLevel(logging.DEBUG)
+
+	if not os.path.isdir("logs"): os.mkdir("logs")
+	fh = logging.FileHandler(filename='logs/%s_lock.log' % NAME) #file handler
+	fh.setFormatter(formatter)
+	#logger.addHandler(ch)
+	logger.addHandler(fh)
+	logger.info("\n\nTRIGGER LOCK DETAILS: CREATION\n\n")
+
 
 	# 2. MOUNTED
 	#
@@ -32,12 +51,12 @@ def check4burst(RA, DEC, EQUINOX, TRIGGERTIME, NAME):
 	if glob.glob(filename):
 		os.remove(filename)
 
-	Mounted = mounted(verbose=True)
+	Mounted = mounted(NAME, verbose=True)
 
 	# 3. OBSERVABLE
 	#
 	
-	Observability, obstime = observability(RA, DEC, EQUINOX, TRIGGERTIME)
+	Observability, obstime = observability(RA, DEC, EQUINOX, TRIGGERTIME, NAME)
 
 
 	# Possible outcomes
@@ -56,7 +75,7 @@ def check4burst(RA, DEC, EQUINOX, TRIGGERTIME, NAME):
 		lockfilename = "lock/%s.rrm" % (NAME)
 
 		if glob.glob(lockfilename):
-                        print "THIS TRIGGER HAS ALREADY BEEN CREATED, EXITING."
+                        logger.info("THIS TRIGGER HAS ALREADY BEEN CREATED, EXITING.")
 		else:
 			lockfile = open(lockfilename, "w")
 	                lockfile.write("%s %s %s %s %s\n" % (RA, DEC, NAME, obstime[0],obstime[-1]))
@@ -64,10 +83,26 @@ def check4burst(RA, DEC, EQUINOX, TRIGGERTIME, NAME):
 		
 	return Observability & Mounted
 
-def check4trigger():
+def check4trigger(force=False):
+
+	# Logging
+	logfmt = '%(levelname)s:  %(message)s\t(%(asctime)s)'
+	datefmt= '%m/%d/%Y %I:%M:%S %p'
+	formatter = logging.Formatter(fmt=logfmt,datefmt=datefmt)
+	logger = logging.getLogger('__main__')
+	logging.root.setLevel(logging.DEBUG)
+
+	if not os.path.isdir("logs"): os.mkdir("logs")
+	fh = logging.FileHandler(filename='logs/%s_lock.log' % NAME) #file handler
+	fh.setFormatter(formatter)
+	#logger.addHandler(ch)
+	logger.addHandler(fh)
+	logger.info("TRIGGER LOCK DETAILS: SURVEILLANCE\n\n")
 
 	# Checks if there is a trigger that should be called
 
+	logger.info("Checking for RRM triggers awaiting HAWK-I triggering\n")
+  
 	# FROM DOC
 	# --------
         # OPTIONS:
@@ -86,23 +121,79 @@ def check4trigger():
 	
 	# Check the lock folder
 	rrmLocks = glob.glob("lock/*")
+	newTrigger = []
+	previousTriggers = []
+	
 	if rrmLocks:
 		for rrmburst in rrmLocks:
 			pattern = 'rrmlock'
 			if re.search(pattern, rrmburst):
-				print "RRM LOCKED IGNORING BURST: %s"
+				logger.info("RRM LOCKED IGNORING BURST: %s" % rrmburst)
 				previousTriggers.append(rrmburst)
 
 			else:
-				print "RRM TRIGGER: %s"
+				logger.info("RRM TRIGGER: %s" % rrmburst)
 				newTrigger.append(rrmburst)
 
 		for burst in newTrigger:
 
 			# Trigger RRM
+			# Collect the details
+			rrmfile = open(burst, "r")
+			rrmdata = rrmfile.readlines()[0].split(" ")
+			rrmfile.close()
+			
+			rrmRA = rrmdata[0]
+			rrmDEC = rrmdata[1]
+			rrmName = rrmdata[2]
+			rrmStart = float(rrmdata[3])
+			rrmEnd = float(rrmdata[4])
+			
+			logger.info("Details of opened trigger")
+			logger.info("rrmRA: %s" % rrmRA)
+			logger.info("rrmDEC: %s" % rrmDEC)
+			logger.info("rrmName: %s" % rrmName)
+			logger.info("rrmStart: %s JD" % rrmStart)
+			logger.info("rrmEnd: %s JD" % rrmEnd)
+			
+			# First we have  to check if we can trigger
+			if not force:
+				JulianDayNOW = coo.time_to_jd(time.gmtime(time.time())[0:6])
+				TimeBetweenNowAndTrigger = JulianDayNOW - rrmStart
+				if TimeBetweenNowAndTrigger > 0:
+					logger.info("!!! TRIGGERING !!!")
+					# Move the file to a locked rrm trigger
+					shutil.move(burst, "%slock" % burst)
+					
+				else:
+					
+					logger.info("This trigger is in the future")
+					logger.info("Time until trigger: %.2f hours" % (abs(TimeBetweenNowAndTrigger*24)))
+					break
+
+			# 1. Upload FTP
+			logger.info("\nBeginning RRM Upload")
+			OBName = "RRM_GRB_AUTO_1"
+			RRMFile = makeRRMFile(rrmRA, rrmDEC, rrmName, OBName)
+			uploadRRMFile(RRMFile)
+			logger.info("Finished RRM Upload")
+
+			# 2. Finding Chart
+			logger.info("\nBeginning FC Creation")
+			FindingChartName = "fc/%s.jpg" % (rrmName)
+			FindingChartURL = "http://jonnyy.uwcs.co.uk/grbs/%s.jpg" % (rrmName)
+			rrmError = 600
+			hack_fc(rrmRA, rrmDEC, rrmName, rrmError)
+			upload_fc(FindingChartName)
+			logger.info("Finished FC Creation")
+
+			# 3. E-mail details
+			logger.info("\nBeginning E-mail Sending")
+			email_send(FindingChartURL, rrmName, OBName, rrmRA, rrmDEC)
+			logger.info("Finished E-mail Sending")
 
 	else:
-		print "NO TRIGGERS, EXITING"
+		logger.info("NO TRIGGERS, EXITING")
 
 
 if __name__ == "__main__":
@@ -114,19 +205,30 @@ if __name__ == "__main__":
 
         # Trigger something observable at night
         # Expected: TRIGGER
-        RA = "06:30:45.50"
-        DEC = "-60:31:12.0"
-        EQUINOX = "J2000"
-	NAME = "TEST"
-        TRIGGERTIME = time.struct_time((2011, 12, 21, 23, 43, 0, 0, 0, 0))
-        TRIGGERTIME = coo.time_to_jd(TRIGGERTIME[0:6])
-        if check4burst(RA, DEC, EQUINOX, TRIGGERTIME, NAME):
-                print "\nExpected result"
-        else:
-                print "WARNING: FAILED!!!"
+        # 1. GRB INFO FROM JCG PAGES
+	grblist = burstinfo()
+	
+	for grb in grblist:
+		#RA = "06:30:45.50"
+		#DEC = "-60:31:12.0"
+		#EQUINOX = "J2000"
+		#NAME = "TEST"
+		#TRIGGERTIME = time.struct_time((2012, 01, 10, 23, 43, 0, 0, 0, 0))
+		
+		RA = grb.getRA()
+		DEC = grb.getDEC()
+		EQUINOX = "J2000"
+		NAME = grb.getName()
+		TRIGGERTIME = grb.getTIME()
+		TRIGGERTIME = coo.time_to_jd(TRIGGERTIME[0:6])
+        
+		if not check4burst(RA, DEC, EQUINOX, TRIGGERTIME, NAME):
+			print "\nExpected result"
+		else:
+			print "WARNING: FAILED!!!"
 
-        print "\n\n\n\n\n"
+        #print "\n\n\n\n\n"
 
-	check4trigger()
+	#check4trigger()
 
 # Tue Dec 20 18:53:04 CET 2011
