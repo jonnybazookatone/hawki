@@ -1,9 +1,13 @@
 #!/usr/bin/python
 """Parses jochens webpage for bursts of the day."""
 
-import datetime, sys, re
-from pyweb.webclass import CopiedWebPage
-from pygrb.grbclass import GRB
+import datetime
+import sys
+import re
+import time
+
+from lib.pyweb.webclass import CopiedWebPage
+from lib.pygrb.grbclass import GRB
 
 __author__ = "Jonny Elliott"
 __copyright__ = "Copyright 2011"
@@ -24,9 +28,14 @@ def main(DefaultPage="http://www.mpe.mpg.de/~jcg"):
 
 	# 1. 
 	UTCNow = datetime.datetime.utcnow()
-	UTCName = "%s%s%s" % (UTCNow.year-2000,UTCNow.month, UTCNow.day)
+	if UTCNow.month < 10:
+		month = "0%s" % UTCNow.month
+	else:
+		month = "%s" % UTCNow.month
+	UTCName = "%s%s%s" % (UTCNow.year-2000,month, "06")
+	#UTCName = "%s%s%s" % (UTCNow.year-2000,UTCNow.month, UTCNow.day)
 	GRBPreFix = ['grb']
-	GRBEndFix = ['A', 'B', 'C', 'D', 'E', 'F']
+	GRBEndFix = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
 	
 
 	# 2.
@@ -38,7 +47,7 @@ def main(DefaultPage="http://www.mpe.mpg.de/~jcg"):
 			Page = "%s/%s.html" % (DefaultPage, GRBName)
 
 			newJochenPage = CopiedWebPage()
-                        newJochenPage.setFileName(filename="%s.html" % GRBName)
+                        newJochenPage.setFileName(filename="bursts/%s.html" % GRBName)
 			pageFlag = newJochenPage.getWebPage(url=Page)
 
 			if pageFlag:
@@ -62,15 +71,24 @@ def main(DefaultPage="http://www.mpe.mpg.de/~jcg"):
 		patternsundist = "SUN_DIST"
 		# D. Moon distance: MOON_DIST
 		patternmoondist = "MOON_DIST"
+		# E. Trigger time
+		patterntriggertime = "NOTICE_DATE"
+		
 
 		burst.parseWebPage()
 		burstcontent = burst.getContent()
 
 		newgrb = GRB()
+		newgrb.setName(burst._filename.replace("bursts/","").replace(".html",""))
 		for i in range(len(burstcontent)):
 			information = burstcontent[i]
 		
-			if re.search(patternra, information):
+			if re.search(patterntriggertime, information):
+				tmp = information.split(" ")[-2].split(":")
+				timestruct = time.struct_time((UTCNow.year, month, 06, tmp[0], tmp[1], tmp[2], 0, 0, 0))
+				newgrb.setTIME(timestruct)
+		
+			if re.search(patternra, information) and re.search("J2000", information):
 				tmp = information.replace(" ","").replace("\n","").replace(",","").replace("(J2000)","")
 				ra, flag = "", False
 				for i in range(len(tmp)):
@@ -84,7 +102,7 @@ def main(DefaultPage="http://www.mpe.mpg.de/~jcg"):
 				ra = ra.replace("h", "").replace("m","").replace("s","").replace("+","")
 				newgrb.setRA(ra)
 
-			if re.search(patterndec, information):
+			if re.search(patterndec, information) and re.search("J2000", information):
                                 tmp = information.replace(" ","").replace("\n","").replace(",","").replace("(J2000)","")
                                 dec, flag = "", False
                                 for i in range(len(tmp)):
@@ -103,12 +121,10 @@ def main(DefaultPage="http://www.mpe.mpg.de/~jcg"):
 		if newgrb.enoughProperties():
 			grblist.append(newgrb)
 
-
 	for grb in grblist:
-		print "RA:%s\nDEC:%s" % (grb.getRA(), grb.getDEC())
-
-
-
+		print "RA:%s\nDEC:%s\nTIME:%s" % (grb.getRA(), grb.getDEC(), grb.getTIME())
+		
+	return grblist
 
 if __name__ == "__main__":
 

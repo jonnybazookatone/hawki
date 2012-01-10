@@ -16,9 +16,11 @@ import sys
 import numpy
 import datetime
 import time
+import logging
+import os
 
-from pyservatory.cooReWrapperClass import CelestialObject
-import pyservatory.cooclasses as coo
+from lib.pyservatory.cooReWrapperClass import CelestialObject
+import lib.pyservatory.cooclasses as coo
 
 __author__ = "Jonny Elliott"
 __copyright__ = "Copyright 2011"
@@ -29,7 +31,21 @@ __maintainer__ = "Jonny Elliott"
 __email__ = "jonnyelliott@mpe.mpg.de"
 __status__ = "Prototype"
 
-def main(RA, DEC, EQUINOX, TRIGGERTIME):
+def main(RA, DEC, EQUINOX, TRIGGERTIME, NAME):
+
+	logfmt = '%(levelname)s:  %(message)s\t(%(asctime)s)'
+	datefmt= '%m/%d/%Y %I:%M:%S %p'
+	formatter = logging.Formatter(fmt=logfmt,datefmt=datefmt)
+	logger = logging.getLogger('__main__')
+	logging.root.setLevel(logging.DEBUG)
+
+	if not os.path.isdir("logs"): os.mkdir("logs")
+	fh = logging.FileHandler(filename='logs/%s_obs.log' % NAME) #file handler
+	fh.setFormatter(formatter)
+	#logger.addHandler(ch)
+	logger.addHandler(fh)
+	logger.info("OBSERVABILITY DETAILS\n\n")
+
 	# Script outline
 	# 
 	# 1. When is the object visible from Paranal?
@@ -44,7 +60,7 @@ def main(RA, DEC, EQUINOX, TRIGGERTIME):
 	GRB.computeNightLength()
 	GRB.setRADEC(RA=RA, DEC=DEC, EQUINOX=EQUINOX)
 	GRB.setTRIGGER(TRIGGERTIME)
-	GRB.printInfo()
+	GRB.printInfo(NoLogger=NAME)
 	#GRB.plotNightAltitude()
 	#GRB._Figures = GRB._Figures - 1
 	#GRB.plotNightVisibility()
@@ -60,16 +76,14 @@ def main(RA, DEC, EQUINOX, TRIGGERTIME):
 	fullVisibilityArray = GRB.computeNightVisibility(telescopelimit=20, triggerdelay=(4/24.), triggertime=GRB.getTRIGGERTIME())
 
 	if len(fullVisibilityArray) == 0:
-		print "### ATTENTION ###"
-		print "Plan: do NOT trigger VLT"
-		print ""
-		print "REASONS"
-		print "No observability period."
-		print ""
-		print "DETAILS"
-		print "Time of trigger:", GRB.jd2skycalcstruct(GRB.getTRIGGERTIME())
-		print "Current time:", GRB.jd2skycalcstruct(JulianDayNOW)
-		print "End of observability:", GRB.jd2skycalcstruct(TimeArray[-1])
+                logger.info("### ATTENTION ###")
+                logger.info("Plan: do NOT trigger VLT")
+                logger.info("REASONS")
+                logger.info("No observability period.")
+                logger.info("DETAILS")
+                logger.info("Time of trigger: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(GRB.getTRIGGERTIME()))
+                logger.info("Current time: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(JulianDayNOW))
+                logger.info("End of observability: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(TimeArray[-1]))
 		triggerFlag = False
 	
 	else:
@@ -89,25 +103,22 @@ def main(RA, DEC, EQUINOX, TRIGGERTIME):
 			tmpTimeArray = numpy.array([])
 			for i in range(len(TimeArray)):
 				if TimeArray[i] >= GRB.getTRIGGERTIME():
-					tmpTimeArray = numpy.append(tmpTimeArray, TimeArray[i])
+					ftmpTimeArray = numpy.append(tmpTimeArray, TimeArray[i])
 					
 			if len(tmpTimeArray) == 0:
-			  	print "### ATTENTION ###"
-				print "Plan: do NOT trigger VLT"
-				print ""
-				print "REASONS"
-				print "No observability period."
-				print ""
-				print "DETAILS"
-				print "Time of trigger:", GRB.jd2skycalcstruct(GRB.getTRIGGERTIME())
-				print "Current time:", GRB.jd2skycalcstruct(JulianDayNOW)
+				logger.info("### ATTENTION ###")
+				logger.info("Plan: do NOT trigger VLT")
+				logger.info("REASONS")
+				logger.info("No observability period.")
+				logger.info("DETAILS")
+				logger.info("Time of trigger: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(GRB.getTRIGGERTIME()))
+				logger.info("Current time: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(JulianDayNOW))
 				triggerFlag = False
 				break
 					
-			print "Possible observability"
-			print GRB.jd2skycalcstruct(tmpTimeArray[0])
-			print GRB.jd2skycalcstruct(tmpTimeArray[-1])
-			print ""
+			logger.info("Possible observability")
+			logger.info("%s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(tmpTimeArray[0]))
+			logger.info("%s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(tmpTimeArray[-1]))
 
 			# all the times needed
 			# ATTENTION - TIMES WILL BE IN HOURS FOR COMPARISON
@@ -116,52 +127,45 @@ def main(RA, DEC, EQUINOX, TRIGGERTIME):
 			TimeBetweenTriggerAndHAWKI = (tmpTimeArray[0] - GRB.getTRIGGERTIME()) * 24. # for 4.
 
 			if len(tmpTimeArray) == 0:
-				print "### ATTENTION ###"
-				print "Plan: do NOT trigger VLT"
-				print ""
-				print "REASONS"
-				print "No observability period."
-				print ""
-				print "DETAILS"
-				print "Time of trigger:", GRB.jd2skycalcstruct(GRB.getTRIGGERTIME())
-				print "Current time:", GRB.jd2skycalcstruct(JulianDayNOW)
-				print "End of observability:", GRB.jd2skycalcstruct(TimeArray[-1])
+				logger.info("### ATTENTION ###")
+				logger.info("Plan: do NOT trigger VLT")
+				logger.info("REASONS")
+				logger.info("No observability period.")
+				logger.info("DETAILS")
+				logger.info("Time of trigger: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(GRB.getTRIGGERTIME()))
+				logger.info("Current time: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(JulianDayNOW))
+				logger.info("End of observability: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(TimeArray[-1]))
 				triggerFlag = False
 				break
 		  
 			# 2. is the length of the observation greater than 1 hour? - if we trigger before the obs period
 			if LengthOfObservability < exposureTime:
-				print "### ATTENTION ###"
-				print "Plan: do NOT trigger VLT"
-				print ""
-				print "REASONS"
-				print "Observable: %s hours" % (LengthOfObservability)
-				print "Time until triggering: %s hours" % (TimeBetweenTriggerAndHAWKI)
-				print ""
-				print "DETAILS"
-				print "Time of trigger:", GRB.jd2skycalcstruct(GRB.getTRIGGERTIME())
-				print "Current time:", GRB.jd2skycalcstruct(JulianDayNOW)
-				print "Start of observability:", GRB.jd2skycalcstruct(TimeArray[0])
-				print "End of observability:", GRB.jd2skycalcstruct(TimeArray[-1])
+				logger.info("### ATTENTION ###")
+				logger.info("Plan: do NOT trigger VLT")
+				logger.info("REASONS")
+				logger.info("Observable: %s hours" % (LengthOfObservability))
+				logger.info("Time until triggering: %s hours" % (TimeBetweenTriggerAndHAWKI))
+				logger.info("DETAILS")
+				logger.info("Time of trigger: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(GRB.getTRIGGERTIME()))
+				logger.info("Current time: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(JulianDayNOW))
+				logger.info("Start of observability: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(TimeArray[0]))
+				logger.info("End of observability: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(TimeArray[-1]))
 				triggerFlag = False
 				break
 
 			# 3. is the end of the observation - NOW, greater than 1 hour?  -  if we trigger during the obs period
 			if LengthOfObservabilityFromNow < exposureTime:
-				print "### ATTENTION ###"
-				print "Plan: do NOT trigger VLT"
-				print ""
-				print "REASONS"
-				print "If we trigger now, we do not have enough time to expose."
-				print "dt = now - end of observability = %s" % (LengthOfObservabilityFromNow)
-				print ""
-				print "DETAILS"
-				print "Observable: %s hours" % (LengthOfObservability)
-				print "Time until triggering: %s hours" % (TimeBetweenTriggerAndHAWKI)
-				print ""
-				print "Time of trigger:", GRB.jd2skycalcstruct(GRB.getTRIGGERTIME())
-				print "Current time:", GRB.jd2skycalcstruct(JulianDayNOW)
-				print "End of observability:", GRB.jd2skycalcstruct(TimeArray[-1])
+				logger.info("### ATTENTION ###")
+				logger.info("Plan: do NOT trigger VLT")
+				logger.info("REASONS")
+				logger.info("If we trigger now, we do not have enough time to expose.")
+				logger.info("dt = now - end of observability = %s" % (LengthOfObservabilityFromNow))
+				logger.info("DETAILS")
+				logger.info("Observable: %s hours" % (LengthOfObservability))
+				logger.info("Time until triggering: %s hours" % (TimeBetweenTriggerAndHAWKI))
+				logger.info("Time of trigger: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(GRB.getTRIGGERTIME()))
+				logger.info("Current time: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(JulianDayNOW))
+				logger.info("End of observability: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(TimeArray[-1]))
 				triggerFlag = False
 				break
 
@@ -169,20 +173,17 @@ def main(RA, DEC, EQUINOX, TRIGGERTIME):
 			TimeBetweenTriggerAndHAWKI = (tmpTimeArray[0] - GRB.getTRIGGERTIME()) * 24.
 
 			if TimeBetweenTriggerAndHAWKI > triggerDelay:
-				print "### ATTENTION ###"
-				print "Plan: do NOT trigger VLT"
-				print ""
-				print "REASONS"
-				print "The VLT trigger time is > 4 hours after the GRB trigger time."
-				print "dt = %s" % (TimeBetweenTriggerAndHAWKI)
-				print ""
-				print "DETAILS"
-				print "Observable: %s hours" % (LengthOfObservability)
-				print "Time until triggering: %s hours" % (TimeBetweenTriggerAndHAWKI)
-				print ""
-				print "Time of trigger:", GRB.jd2skycalcstruct(GRB.getTRIGGERTIME())
-				print "Current time:", GRB.jd2skycalcstruct(JulianDayNOW)
-				print "End of observability:", GRB.jd2skycalcstruct(TimeArray[-1])
+				logger.info("### ATTENTION ###")
+				logger.info("Plan: do NOT trigger VLT")
+				logger.info("REASONS")
+				logger.info("The VLT trigger time is > 4 hours after the GRB trigger time.")
+				logger.info("dt = %s" % (TimeBetweenTriggerAndHAWKI))
+				logger.info("DETAILS")
+				logger.info("Observable: %s hours" % (LengthOfObservability))
+				logger.info("Time until triggering: %s hours" % (TimeBetweenTriggerAndHAWKI))
+				logger.info("Time of trigger: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(GRB.getTRIGGERTIME()))
+				logger.info("Current time: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(JulianDayNOW))
+				logger.info("End of observability: %s-%s-%s %s:%s:%.2f" % GRB.jd2skycalcstruct(TimeArray[-1]))
 				triggerFlag = False
 				break
 			if triggerFlag == True:
@@ -200,15 +201,15 @@ if __name__ == "__main__":
 	RA = "06:30:45.50"
 	DEC = "-60:31:12.0"
 	EQUINOX = "J2000"
-	TRIGGERTIME = time.struct_time((2011, 12, 21, 23, 43, 0, 0, 0, 0))
+	TRIGGERTIME = time.struct_time((2012, 01, 10, 23, 43, 0, 0, 0, 0))
 	TRIGGERTIME = coo.time_to_jd(TRIGGERTIME[0:6])
-	if main(RA, DEC, EQUINOX, TRIGGERTIME):
+	if main(RA, DEC, EQUINOX, TRIGGERTIME, "TEST"):
 		print "\nExpected result"
 	else:
 		print "WARNING: FAILED!!!"
 		
 	print "\n\n\n\n\n"
-	
+	sys.exit()
 	# Try to trigger something not observable at night
 	# Expected: NO TRIGGER
 	RA = "-30:30:45.50"
@@ -217,7 +218,7 @@ if __name__ == "__main__":
 	TRIGGERTIME = time.struct_time((2011, 12, 21, 00, 43, 0, 0, 0, 0))
 	TRIGGERTIME = coo.time_to_jd(TRIGGERTIME[0:6])
 	
-	if not main(RA, DEC, EQUINOX, TRIGGERTIME):
+	if not main(RA, DEC, EQUINOX, TRIGGERTIME, "TEST"):
 		print "\n"
 		print "Expected result"
 	else:
@@ -231,7 +232,7 @@ if __name__ == "__main__":
 	TRIGGERTIME = time.struct_time((2011, 12, 21, 06, 43, 0, 0, 0, 0))
 	TRIGGERTIME = coo.time_to_jd(TRIGGERTIME[0:6])
 	
-	if not main(RA, DEC, EQUINOX, TRIGGERTIME):
+	if not main(RA, DEC, EQUINOX, TRIGGERTIME, "TEST"):
 		print "\n"
 		print "Expected result"
 	else:
@@ -248,7 +249,7 @@ if __name__ == "__main__":
 	TRIGGERTIME = time.struct_time((2011, 12, 20, 23, 43, 0, 0, 0, 0))
 	TRIGGERTIME = coo.time_to_jd(TRIGGERTIME[0:6])
 	
-	if not main(RA, DEC, EQUINOX, TRIGGERTIME):
+	if not main(RA, DEC, EQUINOX, TRIGGERTIME, "TEST"):
 		print "\n"
 		print "Expected result\n"
 	else:

@@ -15,7 +15,7 @@ from hawki_email_send import email_send
 from hawki_make_fc import hack_fc, upload_fc
 from hawki_mounted import mounted 
 from hawki_schedule import main as observability
-import pyservatory.cooclasses as coo
+import lib.pyservatory.cooclasses as coo
 
 __author__ = "Jonny Elliott"
 __copyright__ = "Copyright 2011"

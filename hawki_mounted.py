@@ -6,7 +6,10 @@ To check if HAWKI is currently mounted on UT4 at the VLT.
 """
 
 import re
-from pyweb.webclass import CopiedWebPage
+import logging
+import os
+
+from lib.pyweb.webclass import CopiedWebPage
 
 __author__ = "Jonny Elliott"
 __copyright__ = "Copyright 2011"
@@ -23,8 +26,21 @@ __status__ = "Prototype"
 # 2. Parse the webpage
 # 3. Return the user a True/False and information about the mounting
 
-def mounted(verbose=True):
-	print __doc__
+def mounted(NAME="TEST",verbose=True):
+	# Logging
+	logfmt = '%(levelname)s:  %(message)s\t(%(asctime)s)'
+	datefmt= '%m/%d/%Y %I:%M:%S %p'
+	formatter = logging.Formatter(fmt=logfmt,datefmt=datefmt)
+	logger = logging.getLogger('__main__')
+	logging.root.setLevel(logging.DEBUG)
+
+	if not os.path.isdir("logs"): os.mkdir("logs")
+	fh = logging.FileHandler(filename='logs/%s_mnt.log' % NAME) #file handler
+	fh.setFormatter(formatter)
+	#logger.addHandler(ch)
+	logger.addHandler(fh)
+	logger.info("VLT INSTRUMENT DETAILS\n\n")
+
 
 	HAWKIPage = CopiedWebPage()
 	HAWKIPage.setFileName("rrmLog_WebStatus.html")
@@ -40,8 +56,7 @@ def mounted(verbose=True):
 	Content = HAWKIPage.getContent()
 
 	if verbose:
-		print "rrmStatus Information"
-		print "---------------------"
+		logger.info("rrmStatus Information")
 
 	for i in range(len(Content)):
 
@@ -54,7 +69,7 @@ def mounted(verbose=True):
 		# Is UT4 online
 		if re.search(patternUT, line1) and re.search(patternOnOff, line2):
 			if verbose:
-				print "%s STATUS: %s" % (line1.replace(" ", "").replace("<tdalign=center>", "").replace("</td>","").replace("\n",""), line2.replace(" ", ""))
+				logger.info("%s STATUS: %s" % (line1.replace(" ", "").replace("<tdalign=center>", "").replace("</td>","").replace("\n",""), line2.replace(" ", "")))
 				#print "%s" % (line1.replace(" ", ""))
 				#print "%s\n" % (line2.replace(" ",""))
 			OnOff = True
@@ -63,35 +78,34 @@ def mounted(verbose=True):
 		# Is HAWKI online
 		if re.search(patternMount, line1):
 			if verbose:
-				print "HAWKI is mounted at the VLT."
-				print "STATUS UT4: %s" % (line1.replace(" ",""))
+				logger.info("HAWKI is mounted at the VLT.")
+				logger.info("STATUS UT4: %s" % (line1.replace(" ","")))
 			Mounted = True
 
-	print "End of rrmStatus information"
-	print "----------------------------\n"
+	logger.info("End of rrmStatus information\n")
 
 	# If UT4 is Online and HAWKI Mounted
 	if OnOff and Mounted:
 		if verbose:
-			print "UT4 is ONLINE and HAWKI is MOUNTED"
+			logger.info("UT4 is ONLINE and HAWKI is MOUNTED")
 		returnFlag = True
 
 	# If UT4 is Online but HAWKI not Mounted
 	elif OnOff and not Mounted:
 		if verbose:
-			print "UT4 is ONLINE but HAWKI is !NOT! MOUNTED"
+			logger.info("UT4 is ONLINE but HAWKI is !NOT! MOUNTED")
 		returnFlag = False
 
 	# If UT4 is Offline but HAWKI not Mounted
 	elif not OnOff and Mounted:
 		if verbose:
-			print "UT4 is OFFLINE but HAWKI is MOUNTED"
+			logger.info("UT4 is OFFLINE but HAWKI is MOUNTED")
 		returnFlag = False
 
 	# If UT4 is Offline and HAWKI is not Mounted
 	elif not OnOff and not Mounted:
 		if verbose:
-			print "UT4 is OFFLINE and HAWKI is !NOT! MOUNTED"
+			logger.info("UT4 is OFFLINE and HAWKI is !NOT! MOUNTED")
 		returnFlag = False
 
 	return returnFlag
